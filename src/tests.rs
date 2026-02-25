@@ -26,7 +26,7 @@ fn newfn() {
 //     sandbox_init("ArchLinux", "ARCH").expect("Failed");
 //     let a = set_sandbox_tool("seila");
 //     eprintln!("\n\x1b[1;31m{:?}\x1b[0m", a.err().unwrap());
-}
+// }
 
 #[test]
 fn test1_sandbox_output() {

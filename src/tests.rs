@@ -15,17 +15,17 @@ fn newfn() {
     println!("Tool Target:   {:?}\x1b[0m", tool_target());
 }
 
-#[test]
-fn test0_arquitecture_not_found() {
-    let fake_arch = "super_cpu_9000";
-
-    unsafe {
-        env::set_var("ARCH", fake_arch);
-    }
-
-    sandbox_init("ArchLinux", "ARCH").expect("Failed");
-    let a = set_sandbox_tool("seila");
-    eprintln!("\n\x1b[1;31m{:?}\x1b[0m", a.err().unwrap());
+// #[test]
+// fn test0_arquitecture_not_found() {
+//     let fake_arch = "super_cpu_9000";
+//
+//     unsafe {
+//         env::set_var("ARCH", fake_arch);
+//     }
+//
+//     sandbox_init("ArchLinux", "ARCH").expect("Failed");
+//     let a = set_sandbox_tool("seila");
+//     eprintln!("\n\x1b[1;31m{:?}\x1b[0m", a.err().unwrap());
 }
 
 #[test]

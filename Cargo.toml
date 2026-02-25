@@ -1,0 +1,21 @@
+[package]
+name = "sandbox_utils"
+version = "1.0.0"
+edition = "2024"
+
+[features]
+default = ["gz", "xz", "zst"]
+gz = ["flate2"]
+xz = ["xz2"]
+zst = ["zstd"]
+
+[dependencies]
+flate2 = { version = "1.1", optional = true }
+xz2 = { version = "0.1", optional = true }
+zstd = { version = "0.13", optional = true }
+indicatif = "0.18"
+tar = "0.4"
+ureq = "3.2"
+which = "8.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }

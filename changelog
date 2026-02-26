@@ -1,0 +1,7 @@
+Thu Feb 26 16:02:16 -03 2026:
+    - upload version 1.0
+    - default init utils
+    - sandbox tools
+    - dialog tools
+    - download tools
+    - extract tools for gz, xz and zst

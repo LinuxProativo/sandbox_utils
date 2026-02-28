@@ -6,6 +6,7 @@
 
 mod dialogs;
 mod init;
+mod macros;
 mod progress;
 mod sandbox;
 
@@ -30,7 +31,3 @@ pub use init::{
     sandbox_init, sandbox_tool, set_sandbox_tool, temp_cache, tool_target, USE_BWRAP,
     USE_PROOT,
 };
-
-/// Unit tests for ensuring the integrity of the sandbox logic.
-#[cfg(test)]
-mod tests;

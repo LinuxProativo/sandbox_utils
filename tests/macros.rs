@@ -22,11 +22,14 @@ fn test_macro_missing_arg() {
     let res_normal: Result<(), Box<dyn std::error::Error>> = missing_arg!("aports");
     let res_essential: Result<(), Box<dyn std::error::Error>> = missing_arg!("aports", essential);
 
-    println!("\x1b[1;31m{:?}\x1b[0m", res_normal);
-    println!("\x1b[1;31m{:?}\x1b[0m", res_essential);
+    let err_normal = res_normal.unwrap_err().to_string();
+    let err_essential = res_essential.unwrap_err().to_string();
 
-    assert!(res_normal.unwrap_err().to_string().contains("no parameter specified"));
-    assert!(res_essential.unwrap_err().to_string().contains("no essential parameter specified"));
+    println!("\x1b[1;31m{}\x1b[0m", err_normal);
+    println!("\x1b[1;31m{}\x1b[0m", err_essential);
+
+    assert!(err_normal.contains("no parameter specified"));
+    assert!(err_essential.contains("no essential parameter specified"));
 }
 
 #[test]
@@ -45,8 +48,9 @@ fn test_macro_parse_value() {
     assert_eq!(val2, "curl");
 
     let res_err = parse_value!("aports", "pkg", "--get=");
-    println!("\x1b[1;31m{:?}\x1b[0m\n", res_err);
-
     assert!(res_err.is_err());
-    assert!(res_err.unwrap_err().contains("requires a <pkg>"));
+
+    let err_res = res_err.unwrap_err().to_string();
+    println!("\x1b[1;31m{}\x1b[0m\n", err_res);
+    assert!(err_res.contains("requires a <pkg>"));
 }

@@ -1,10 +1,13 @@
+Wed Apr 15 20:41:28 -03 2026:
+    - Added support for OverlayFS to enable high-performance union mount capabilities.
+    - Refined the sandbox execution logic by replacing the no_group constraint with a dedicated secure_rootfs mode,
+      providing a more robust isolation layer for the root filesystem.
 Sat Feb 28 13:58:42 -03 2026:
-    - refactory tests
-    - add macro tools
+    - Comprehensive refactoring of the test suite to improve code coverage and maintainability.
+    - Implementation of new macro tools to automate repetitive tasks and simplify the development workflow.
 Thu Feb 26 16:02:16 -03 2026:
-    - upload version 1.0
-    - default init utils
-    - sandbox tools
-    - dialog tools
-    - download tools
-    - extract tools for gz, xz and zst
+    - Integration of default initialization utilities to standardize the project's bootstrap process.
+    - Development of sandbox tools for secure and isolated execution of external processes.
+    - Introduction of interactive dialog tools to enhance user communication and system prompts.
+    - Implementation of robust download tools with support for remote file fetching.
+    - Added specialized extraction tools with full support for .gz, .xz, and .zst compression formats.

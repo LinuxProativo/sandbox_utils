@@ -1,9 +1,9 @@
 use overlayfs_fuse::{InodeMode, OverlayAction};
 use sandbox_utils::*;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Helper to get the path for test files.
 pub fn test_file(name: &str) -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     p.push("files");
@@ -11,19 +11,28 @@ pub fn test_file(name: &str) -> PathBuf {
     p
 }
 
-/// Prepares a fresh rootfs for testing by extracting the bootstrap tarball.
-fn fresh_rootfs(dest: &PathBuf) {
-    let _ = fs::remove_dir_all(dest);
-    extract_bootstrap(test_file("rootfs.tar.gz"), dest.clone())
+fn get_unique_test_path(prefix: &str) -> PathBuf {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    PathBuf::from(format!("/tmp/sandbox_test_{}_{}", prefix, timestamp))
+}
+
+fn fresh_rootfs(dest: &Path) {
+    if dest.exists() {
+        let _ = fs::remove_dir_all(dest);
+    }
+    fs::create_dir_all(dest).expect("Failed to create rootfs directory");
+
+    extract_bootstrap(test_file("rootfs.tar.gz"), dest.to_path_buf())
         .expect("Failed to extract rootfs");
 }
 
-/// Common setup for all overlay tests.
-fn setup_test() -> PathBuf {
-    sandbox_init("ArchLinux", "ARCH").expect("Failed to init sandbox");
+fn setup_test(test_id: &str) -> PathBuf {
+    sandbox_init("ArchLinux", "ARCH").expect("Failed to initialize sandbox");
     set_sandbox_tool(USE_PROOT).expect("Failed to set sandbox tool");
-
-    let rootfs = PathBuf::from("/tmp/test_overlay");
+    let rootfs = get_unique_test_path(test_id);
     fresh_rootfs(&rootfs);
     rootfs
 }
@@ -34,26 +43,27 @@ mod overlay_tests {
 
     #[test]
     fn test_overlay_discard() {
-        let rootfs = setup_test();
+        let rootfs = setup_test("discard");
 
         SandBox::run(SandBoxConfig {
             rootfs: rootfs.clone(),
             run_cmd: "touch /discard_test.txt".to_string(),
             use_overlay: true,
-            ignore_extra_bind: true,
             action: OverlayAction::Discard,
             ..Default::default()
-        }).expect("Discard: run failed");
+        })
+        .expect("Discard action: run failed");
 
         assert!(
             !rootfs.join("discard_test.txt").exists(),
             "Discard: file leaked to lower layer"
         );
+        let _ = fs::remove_dir_all(&rootfs);
     }
 
     #[test]
     fn test_overlay_commit() {
-        let rootfs = setup_test();
+        let rootfs = setup_test("commit");
 
         SandBox::run(SandBoxConfig {
             rootfs: rootfs.clone(),
@@ -61,17 +71,19 @@ mod overlay_tests {
             use_overlay: true,
             action: OverlayAction::Commit,
             ..Default::default()
-        }).expect("Commit: run failed");
+        })
+        .expect("Commit action: run failed");
 
         assert!(
             rootfs.join("commit_test.txt").exists(),
             "Commit: file was not merged into lower layer"
         );
+        let _ = fs::remove_dir_all(&rootfs);
     }
 
     #[test]
     fn test_overlay_commit_atomic() {
-        let rootfs = setup_test();
+        let rootfs = setup_test("atomic");
 
         SandBox::run(SandBoxConfig {
             rootfs: rootfs.clone(),
@@ -79,18 +91,20 @@ mod overlay_tests {
             use_overlay: true,
             action: OverlayAction::CommitAtomic,
             ..Default::default()
-        }).expect("CommitAtomic: run failed");
+        })
+        .expect("CommitAtomic action: run failed");
 
         assert!(
             rootfs.join("atomic_test.txt").exists(),
             "CommitAtomic: file was not merged into lower layer"
         );
+        let _ = fs::remove_dir_all(&rootfs);
     }
 
     #[test]
-    fn test_overlay_preserve_custom_upper() {
-        let rootfs = setup_test();
-        let custom_upper = PathBuf::from("/tmp/test_overlay_upper");
+    fn test_overlay_preserve_with_custom_upper() {
+        let rootfs = setup_test("preserve");
+        let custom_upper = get_unique_test_path("custom_upper");
         let _ = fs::remove_dir_all(&custom_upper);
 
         SandBox::run(SandBoxConfig {
@@ -100,7 +114,8 @@ mod overlay_tests {
             action: OverlayAction::Preserve,
             overlay_upper: Some(custom_upper.clone()),
             ..Default::default()
-        }).expect("Preserve: run failed");
+        })
+        .expect("Preserve action: run failed");
 
         assert!(
             !rootfs.join("preserve_test.txt").exists(),
@@ -111,12 +126,13 @@ mod overlay_tests {
             "Preserve: custom upper was removed"
         );
 
+        let _ = fs::remove_dir_all(&rootfs);
         let _ = fs::remove_dir_all(&custom_upper);
     }
 
     #[test]
-    fn test_overlay_as_home() {
-        let rootfs = setup_test();
+    fn test_overlay_as_home_cleanup() {
+        let rootfs = setup_test("as_home");
 
         SandBox::run(SandBoxConfig {
             rootfs: rootfs.clone(),
@@ -125,7 +141,8 @@ mod overlay_tests {
             action: OverlayAction::Discard,
             overlay_as_home: true,
             ..Default::default()
-        }).expect("overlay_as_home: run failed");
+        })
+        .expect("overlay_as_home: run failed");
 
         let leftover = fs::read_dir(safe_home().join(".cache"))
             .map(|e| {
@@ -138,11 +155,12 @@ mod overlay_tests {
             !leftover,
             "overlay_as_home: mount point was not removed from ~/.cache"
         );
+        let _ = fs::remove_dir_all(&rootfs);
     }
 
     #[test]
-    fn test_overlay_inode_persistent() {
-        let rootfs = setup_test();
+    fn test_overlay_persistent_inodes() {
+        let rootfs = setup_test("persistent");
 
         let config = SandBoxConfig {
             rootfs: rootfs.clone(),
@@ -153,13 +171,14 @@ mod overlay_tests {
             ..Default::default()
         };
 
-        SandBox::run(config.clone()).expect("Persistent: first session failed");
-        SandBox::run(config).expect("Persistent: second session failed");
+        SandBox::run(config.clone()).expect("Persistent Inodes: first session failed");
+        SandBox::run(config).expect("Persistent Inodes: second session failed");
+        let _ = fs::remove_dir_all(&rootfs);
     }
 
     #[test]
-    fn test_overlay_with_root() {
-        let rootfs = setup_test();
+    fn test_overlay_with_root_privileges() {
+        let rootfs = setup_test("root_overlay");
 
         SandBox::run(SandBoxConfig {
             rootfs: rootfs.clone(),
@@ -168,6 +187,8 @@ mod overlay_tests {
             action: OverlayAction::Discard,
             use_root: true,
             ..Default::default()
-        }).expect("use_root + overlay: run failed");
+        })
+        .expect("use_root + overlay: run failed");
+        let _ = fs::remove_dir_all(&rootfs);
     }
 }

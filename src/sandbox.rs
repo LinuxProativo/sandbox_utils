@@ -129,7 +129,10 @@ impl SandBox {
     /// # Returns
     /// * `Ok(())` - If the process starts and exits successfully.
     /// * `Err` - If the rootfs is missing, the overlay fails to mount, or the process errors.
-    pub fn run(config: SandBoxConfig) -> Result<(), Box<dyn Error>> {
+    pub fn run(mut config: SandBoxConfig) -> Result<(), Box<dyn Error>> {
+        let base_path = config.rootfs.clone();
+        config.rootfs = base_path.join("rootfs");
+
         if !config.rootfs.exists() {
             return Err(Box::new(RootfsNotFoundError(config.rootfs)));
         }
@@ -141,7 +144,12 @@ impl SandBox {
             let mut overlay = OverlayFS::new(config.rootfs.clone());
             overlay.set_inode_mode(config.inode_mode.clone());
 
-            if let Some(upper) = config.overlay_upper.clone() {
+            if config.overlay_upper.is_none() {
+                if let Some(parent) = config.rootfs.parent() {
+                    let auto_upper = parent.join("rootfs_upper");
+                    overlay.set_upper(auto_upper);
+                }
+            } else if let Some(upper) = config.overlay_upper.clone() {
                 overlay.set_upper(upper);
             }
 

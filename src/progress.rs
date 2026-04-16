@@ -65,12 +65,13 @@ pub fn download_file(url: &str, dest: PathBuf, filename: &str) -> Result<(), Box
 ///
 /// # Arguments
 /// * `file_path` - Path to the compressed archive file.
-/// * `destination` - Directory where the contents will be extracted.
+/// * `base_destination` - Directory where the contents will be extracted.
 ///
 /// # Returns
 /// * `Ok(())` - If extraction completes successfully.
 /// * `Err` - If the format is unsupported, the file is corrupted, or I/O fails.
-pub fn extract_bootstrap(file_path: PathBuf, destination: PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn extract_bootstrap(file_path: PathBuf, base_destination: PathBuf) -> Result<(), Box<dyn Error>> {
+    let destination = base_destination.join("rootfs");
     fs::create_dir_all(&destination)?;
 
     let file = File::open(&file_path)?;

@@ -75,7 +75,7 @@ mod overlay_tests {
         .expect("Commit action: run failed");
 
         assert!(
-            rootfs.join("commit_test.txt").exists(),
+            rootfs.join("rootfs/commit_test.txt").exists(),
             "Commit: file was not merged into lower layer"
         );
         let _ = fs::remove_dir_all(&rootfs);
@@ -95,7 +95,7 @@ mod overlay_tests {
         .expect("CommitAtomic action: run failed");
 
         assert!(
-            rootfs.join("atomic_test.txt").exists(),
+            rootfs.join("rootfs/atomic_test.txt").exists(),
             "CommitAtomic: file was not merged into lower layer"
         );
         let _ = fs::remove_dir_all(&rootfs);
@@ -111,6 +111,7 @@ mod overlay_tests {
             rootfs: rootfs.clone(),
             run_cmd: "touch /preserve_test.txt".to_string(),
             use_overlay: true,
+            ignore_extra_bind: true,
             action: OverlayAction::Preserve,
             overlay_upper: Some(custom_upper.clone()),
             ..Default::default()

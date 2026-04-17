@@ -16,6 +16,9 @@ pub use dialogs::{
     SEPARATOR,
 };
 
+/// Re-exporting overlay options.
+pub use overlayfs_fuse::{InodeMode, OverlayAction};
+
 /// Re-exporting core sandbox execution logic and configuration structures.
 pub use sandbox::{RootfsNotFoundError, SandBox, SandBoxConfig};
 
